@@ -1,3 +1,4 @@
+import ray
 import numpy as np
 import pandas as pd
 import scipy.integrate as integrate
@@ -6,10 +7,16 @@ import scipy.spatial as spatial
 
 
 def pdf_normal(x):
+    """
+    Probability density function of the normal distribution.
+    """
     return 1 / (np.sqrt(2 * np.pi)) * np.exp((-1 / 2) * (x ** 2))
 
 
 def cdf_normal(x):
+    """
+    Cumulative distribution function of the normal distribution.
+    """
     return 1 / 2 * (1 + special.erf(x / np.sqrt(2)))
 
 
@@ -33,7 +40,7 @@ def sim_peri_convex_hull_2d(n_max_points, seed, n_simulations, sigma):
 
     Returns
     -------
-    array_sim_peri : array
+    array_sim_peri : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
     """
     rng = np.random.default_rng(seed)
@@ -107,7 +114,7 @@ def sim_area_convex_hull_2d(n_max_points, seed, n_simulations, sigma):
 
     Returns
     -------
-    array_sim_areas : array
+    array_sim_areas : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
     """
     rng = np.random.default_rng(seed)
@@ -183,7 +190,7 @@ def sim_area_convex_hull_3d(n_max_points, seed, n_simulations, sigma_xy, sigma_z
 
     Returns
     -------
-    array_sim_areas : array
+    array_sim_areas : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
     """
     rng = np.random.default_rng(seed)
@@ -294,7 +301,7 @@ def sim_volume_convex_hull_3d(n_max_points, seed, n_simulations, sigma_xy, sigma
 
     Returns
     -------
-    array_sim_areas : array
+    array_sim_areas : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
     """
     rng = np.random.default_rng(seed)
@@ -352,37 +359,34 @@ def calc_volume_convex_hull_3d_pt2(sigma_xy, sigma_z, n):
     return sigma_xy**2 * sigma_z * calc_volume_convex_hull_3d_pt1_array(n)
 
 
-# calculate sided variances
-
-
 def sided_deviations(array_sim_values):
     """
     Calculate the mean and the standard deviation above and below the mean.
 
     Parameters
     ----------
-    array_sim_values : array
+    array_sim_values : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
 
     Returns
     -------
-    std_high : array
+    std_high : numpy.ndarray
         Contains the standard deviations of all n, only taking the values above the mean.
-    std_low : array
+    std_low : numpy.ndarray
         Contains the standard deviations of all n, only taking the values below the mean.
-    means : array
+    means : numpy.ndarray
         Contains the mean of all n.
     """
     # noinspection PyTypeChecker
     means = np.mean(array_sim_values, axis=1)
-    high_values = [array_sim_values[i][array_sim_values[i] > means[i]] for i in range(len(means))]
-    low_values = [array_sim_values[i][array_sim_values[i] < means[i]] for i in range(len(means))]
+    high_values = [array_sim_values[i][array_sim_values[i] > mean] for i, mean in enumerate(means)]
+    low_values = [array_sim_values[i][array_sim_values[i] < mean] for i, mean in enumerate(means)]
 
-    dev_high = [(high_values[i] - means[i])**2 for i in range(len(means))]
-    dev_low = [(low_values[i] - means[i])**2 for i in range(len(means))]
+    dev_high = [(high_values[i] - mean)**2 for i, mean in enumerate(means)]
+    dev_low = [(low_values[i] - mean)**2 for i, mean in enumerate(means)]
 
-    var_high = [dev_high[i].mean() for i in range(len(means))]
-    var_low = [dev_low[i].mean() for i in range(len(means))]
+    var_high = [dev_high[i].mean() for i, _ in enumerate(means)]
+    var_low = [dev_low[i].mean() for i, _ in enumerate(means)]
 
     std_high = np.sqrt(np.array(var_high))
     std_low = np.sqrt(np.array(var_low))
@@ -396,16 +400,15 @@ def quantile(array_sim_values, quant):
 
     Parameters
     ----------
-    array_sim_values : array
+    array_sim_values : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), n_simulations).
     quant : float
         Quantile to calculate.
 
     Returns
     -------
-    quant_array : array
+    quant_array : numpy.ndarray
         Array of shape ((n_max_points - n_points_start), ).
-
     """
     array_sim_values = np.sort(array_sim_values)
     quant = 1-quant
@@ -414,46 +417,58 @@ def quantile(array_sim_values, quant):
     return quant_array
 
 
-def lookuptable(measure, seed, n_max_points, n_simulations, sigma, quantile_1, quantile_2, save_to):
+def lookuptable(measure, seed, n_max_points, n_simulations, sigma, quantile_1, quantile_2, save_to=None):
     """
-    Produce lookup table of different statistical quantities of the measures of the convex hull.
+    Receive lookup table of different statistical quantities of the measures of the convex hull.
     High n_simulations ensure a good approximation of the truth.
 
     Parameters
     ----------
     measure : str
         One of "peri_2d", "area_2d", "area_3d", "vol_3d".
-    seed : ...
-    n_max_points : ...
-    n_simulations : ...
-    sigma : ...
+    seed : int, array_like, numpy.random.BitGenerator
+        Seed of random number generation.
+    n_max_points : int
+        Maximum amount of points.
+    n_simulations : int
+        Amount of simulations.
+    sigma : float
+        Standard deviation of the normal distribution in x,y (and z) plane.
     quantile_1 : float
         Number between 0 and 1. First quantile to be computed.
     quantile_2 : float
         Number between 0 and 1. Second quantile to be computed.
     save_to : path, default=None
-        If the dataframe should be saved as csv...
+        If path is provided, the dataframe is saved in the specified format.
 
     Returns
     -------
-    lookup_table : DataFrame
-        Contains the calculated mean, simulated mean, positive and negative standard deviation aswell as two variable
+    lookup_table : pandas.core.frame.DataFrame
+        Contains the calculated mean, simulated mean, positive and negative standard deviation as well as two variable
         quantiles.
     """
     rng = np.random.default_rng(seed)
     if measure == "peri_2d":
+        index_1 = "$E(P_{ch}(n))$"
+        index_2 = "$Mean(P_{ch}(n))$"
         n = np.arange(3, n_max_points+1, 1)
         array_sim_values = sim_peri_convex_hull_2d(n_max_points, rng, n_simulations, sigma)
         array_calc_values = calc_peri_convex_hull_2d_pt2(sigma, n)
     elif measure == "area_2d":
+        index_1 = "$E(A_{ch}(n))$"
+        index_2 = "$Mean(A_{ch}(n))$"
         n = np.arange(3, n_max_points+1, 1)
         array_sim_values = sim_area_convex_hull_2d(n_max_points, rng, n_simulations, sigma)
         array_calc_values = calc_area_convex_hull_2d_pt2(sigma, n)
     elif measure == "area_3d":
+        index_1 = "$E(SA_{ch}(n))$"
+        index_2 = "$Mean(SA_{ch}(n))$"
         n = np.arange(4, n_max_points+1, 1)
         array_sim_values = sim_area_convex_hull_3d(n_max_points, rng, n_simulations, sigma, sigma)
         array_calc_values = calc_area_convex_hull_3d_pt2(sigma, sigma, n)
     elif measure == "vol_3d":
+        index_1 = "$E(V_{ch}(n))$"
+        index_2 = "$Mean(V_{ch}(n))$"
         n = np.arange(4, n_max_points+1, 1)
         array_sim_values = sim_volume_convex_hull_3d(n_max_points, rng, n_simulations, sigma, sigma)
         array_calc_values = calc_volume_convex_hull_3d_pt2(sigma, sigma, n)
@@ -466,10 +481,137 @@ def lookuptable(measure, seed, n_max_points, n_simulations, sigma, quantile_1, q
     quant_2 = quantile(array_sim_values, quantile_2)
 
     data = [array_calc_values, mean, std_pos, std_neg, quant_1, quant_2]
-    index = ["calc_mean", "sim_mean", "std_pos", "std_neg", str(quantile_1) + " quantile",
-             str(quantile_2) + " quantile"]
+    index = [index_1, index_2, r"$std_{pos}(n)$", r"$std_{neg}(n)$",
+             f"$quant_{{{quantile_1}}}(n)$", f"$quant_{{{quantile_2}}}(n)$"]
     columns = n
     lookup_table = pd.DataFrame(data=data, index=index, columns=columns)
+    lookup_table.columns.names = ["$n$"]
+    lookup_table = lookup_table.applymap("{:.2f}".format)
+    if save_to is not None:
+        lookup_table.to_csv(save_to)
+
+    return lookup_table
+
+
+# Since the lookup tables can be very time demanding due to standard error of mean reduction by high n_simulations,
+# here an alternative approach is given exploiting ray to make use of all logical cores.
+
+
+def generate_points_2d(n_max_points, seed, n_simulations, sigma):
+    rng = np.random.default_rng(seed)
+    points = []
+    n_points = 2
+    for i in range(n_max_points - 2):
+        n_points += 1
+        pts = rng.normal(loc=0, scale=sigma, size=(n_simulations, n_points, 2))
+        points.append(pts)
+
+    return points
+
+
+def generate_points_3d(n_max_points, seed, n_simulations, sigma_xy, sigma_z):
+    rng = np.random.default_rng(seed)
+    points = []
+    n_points = 3
+    for i in range(n_max_points - 3):
+        n_points += 1
+        pts = rng.normal(loc=0, scale=sigma_xy, size=(n_simulations, n_points, 2))
+        z_coordinate = rng.normal(loc=0, scale=sigma_z, size=(n_simulations, n_points, 1))
+        pts = np.append(pts, z_coordinate, axis=2)
+        points.append(pts)
+
+    return points
+
+
+@ray.remote
+def perimeter_ray(points):
+    perimeter = np.array([spatial.ConvexHull(pts).area for pts in points])
+
+    return perimeter
+
+
+@ray.remote
+def area_ray(points):
+    area = np.array([spatial.ConvexHull(pts).volume for pts in points])
+
+    return area
+
+
+@ray.remote
+def surface_area_ray(points):
+    surf_area = np.array([spatial.ConvexHull(pts).area for pts in points])
+
+    return surf_area
+
+
+@ray.remote
+def volume_ray(points):
+    vol = np.array([spatial.ConvexHull(pts).volume for pts in points])
+
+    return vol
+
+
+def lookuptable_ray(measure, seed, n_max_points, n_simulations_pt_1, n_simulations_pt_2, sigma, quantile_1, quantile_2,
+                    save_to):
+    rng = np.random.default_rng(seed)
+    if measure == "peri_2d":
+        index_1 = "$E(P_{ch}(n))$"
+        index_2 = "$Mean(P_{ch}(n))$"
+        array_sim_values = np.empty((n_max_points-2, 0))
+        n = np.arange(3, n_max_points + 1, 1)
+        for i in range(n_simulations_pt_1):
+            points = generate_points_2d(n_max_points, rng, n_simulations_pt_2, sigma)
+            future = [perimeter_ray.remote(point) for point in points]
+            array = np.array(ray.get(future))
+            array_sim_values = np.concatenate((array_sim_values, array), axis=1)
+        array_calc_values = calc_peri_convex_hull_2d_pt2(sigma, n)
+    elif measure == "area_2d":
+        index_1 = "$E(A_{ch}(n))$"
+        index_2 = "$Mean(A_{ch}(n))$"
+        array_sim_values = np.empty((n_max_points-2, 0))
+        n = np.arange(3, n_max_points + 1, 1)
+        for i in range(n_simulations_pt_1):
+            points = generate_points_2d(n_max_points, rng, n_simulations_pt_2, sigma)
+            future = [area_ray.remote(point) for point in points]
+            array = np.array(ray.get(future))
+            array_sim_values = np.concatenate((array_sim_values, array), axis=1)
+        array_calc_values = calc_area_convex_hull_2d_pt2(sigma, n)
+    elif measure == "area_3d":
+        index_1 = "$E(SA_{ch}(n))$"
+        index_2 = "$Mean(SA_{ch}(n))$"
+        array_sim_values = np.empty((n_max_points-3, 0))
+        n = np.arange(4, n_max_points + 1, 1)
+        for i in range(n_simulations_pt_1):
+            points = generate_points_3d(n_max_points, rng, n_simulations_pt_2, sigma, sigma)
+            future = [surface_area_ray.remote(point) for point in points]
+            array = np.array(ray.get(future))
+            array_sim_values = np.concatenate((array_sim_values, array), axis=1)
+        array_calc_values = calc_area_convex_hull_3d_pt2(sigma, sigma, n)
+    elif measure == "vol_3d":
+        index_1 = "$E(V_{ch}(n))$"
+        index_2 = "$Mean(V_{ch}(n))$"
+        array_sim_values = np.empty((n_max_points-3, 0))
+        n = np.arange(4, n_max_points + 1, 1)
+        for i in range(n_simulations_pt_1):
+            points = generate_points_3d(n_max_points, rng, n_simulations_pt_2, sigma, sigma)
+            future = [volume_ray.remote(point) for point in points]
+            array = np.array(ray.get(future))
+            array_sim_values = np.concatenate((array_sim_values, array), axis=1)
+        array_calc_values = calc_volume_convex_hull_3d_pt2(sigma, sigma, n)
+    else:
+        raise ("measure has to be one of " + '"peri_2d", ' + '"area_2d",' + '"area_3d",' + '"vol_3d".')
+
+    std_pos, std_neg, mean = sided_deviations(array_sim_values)
+
+    quant_1 = quantile(array_sim_values, quantile_1)
+    quant_2 = quantile(array_sim_values, quantile_2)
+
+    data = [array_calc_values, mean, std_pos, std_neg, quant_1, quant_2]
+    index = [index_1, index_2, r"$std_{pos}(n)$", r"$std_{neg}(n)$",
+             f"$quant_{{{quantile_1}}}(n)$", f"$quant_{{{quantile_2}}}(n)$"]
+    columns = n
+    lookup_table = pd.DataFrame(data=data, index=index, columns=columns)
+    lookup_table.columns.names = ["$n$"]
     lookup_table = lookup_table.applymap("{:.2f}".format)
     if save_to is not None:
         lookup_table.to_csv(save_to)
