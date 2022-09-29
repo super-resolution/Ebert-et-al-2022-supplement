@@ -1,4 +1,4 @@
-# ConvexHullClusterAnalysis
+# Ebert-et-al-supplement
 Python scripts and jupyter notebooks for convex hull diagnostics in SMLM cluster analysis.
 
 This code is a supplement to the publication Ebert et al. 2022.
@@ -17,5 +17,4 @@ or update an existing environment (e.g., 'my_env') with \
 `conda env update -n my_env --file environment.yaml` 
 
 ## License
-
 Distributed under the terms of the BSD-3 license, this code is free and open source software.
