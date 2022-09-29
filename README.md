@@ -1,4 +1,4 @@
-# Ebert-et-al-supplement
+# Ebert-et-al-2022-supplement
 Python scripts and jupyter notebooks for convex hull diagnostics in SMLM cluster analysis.
 
 This code is a supplement to the publication Ebert et al. 2022.
@@ -7,7 +7,7 @@ This code is a supplement to the publication Ebert et al. 2022.
 ## Dependencies
 Run the following commands to install the necessary python packages \
 \
-`python.exe -m pip install -r requirements.txt` \
+`pip install -r requirements.txt` \
 \
 Alternatively, run the following command \
 \
