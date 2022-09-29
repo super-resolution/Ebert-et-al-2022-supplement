@@ -3,7 +3,7 @@ Python scripts and jupyter notebooks for convex hull diagnostics in SMLM cluster
 
 This code is a supplement to the publication Ebert et al. 2022.
 
-![alt text](https://github.com/super-resolution/ConvexHullClusterAnalysis/blob/main/cluster_convex_hull.PNG)
+![alt text](https://github.com/super-resolution/ConvexHullClusterAnalysis/blob/main/cluster_convex_hull_example.PNG)
 ## Dependencies
 Run the following commands to install the necessary python packages \
 \
