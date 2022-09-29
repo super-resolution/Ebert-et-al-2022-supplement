@@ -2,11 +2,11 @@
 Python scripts and jupyter notebooks for convex hull diagnostics in SMLM cluster analysis.
 
 ## Dependencies
-Run the following to install the necessary python packages \
+Run the following commands to install the necessary python packages \
 \
 `python.exe -m pip install -r requirements.txt` \
 \
-Alternatively, run the following \
+Alternatively, run the following command \
 \
 `conda env create -f environment.yaml` \
 \
