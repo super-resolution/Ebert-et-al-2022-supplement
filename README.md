@@ -5,6 +5,8 @@ This code is a supplement to the publication Ebert et al. 2022.
 
 ![alt text](https://github.com/super-resolution/ConvexHullClusterAnalysis/blob/main/cluster_convex_hull_example.PNG)
 ## Dependencies
+Python 3.8
+
 Run the following commands to install the necessary python packages \
 \
 `pip install -r requirements.txt` \
