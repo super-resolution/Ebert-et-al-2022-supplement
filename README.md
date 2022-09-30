@@ -13,11 +13,11 @@ Run the following commands to install the necessary python packages \
 \
 Alternatively, run the following command \
 \
-`conda env create -f environment.yaml` \
+`conda env create -f environment.yml` \
 \
 or update an existing environment (e.g., 'my_env') with \
 \
-`conda env update -n my_env --file environment.yaml` 
+`conda env update -n my_env --file environment.yml` 
 
 ## License
 Distributed under the terms of the BSD-3 [License](https://github.com/super-resolution/ConvexHullClusterAnalysis/blob/main/LICENSE), this code is free and open source software.
